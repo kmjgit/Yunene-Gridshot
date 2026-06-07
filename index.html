@@ -2,19 +2,22 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>3D FPS Gridshot - Plane Pro</title>
+    <title>3D FPS Gridshot - Ultimate Pro</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; font-family: 'Pretendard', sans-serif; }
         #crosshair { position: absolute; top: 50%; left: 50%; width: 8px; height: 8px; background-color: #00ffcc; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 100; display: none; }
-        #hud { position: absolute; top: 20px; left: 20px; color: #fff; font-family: sans-serif; font-size: 24px; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 100; }
-        #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 999; }
-        .box { background: #222; padding: 25px; border-radius: 10px; border: 1px solid #444; text-align: center; width: 350px; }
-        input { padding: 10px; width: 80%; border: none; border-radius: 5px; text-align: center; font-size: 16px; margin: 5px 0; }
-        button { padding: 12px; margin-top: 10px; cursor: pointer; background: #ff3366; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; }
-        .sound-btn-group { display: flex; gap: 5px; margin: 10px 0; }
-        .sound-btn-group label { flex: 1; padding: 10px 5px; border: 1px solid #555; border-radius: 5px; cursor: pointer; font-size: 12px; background: #333; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #fff; font-size: 24px; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 100; }
+        #menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; z-index: 999; }
+        .box { background: #222; padding: 30px; border-radius: 15px; border: 2px solid #444; text-align: center; width: 350px; }
+        h1 { margin-top: 0; color: #00ffcc; }
+        input { padding: 12px; width: 85%; border: 1px solid #555; border-radius: 5px; background: #111; color: white; text-align: center; font-size: 16px; margin: 10px 0; }
+        button { padding: 12px; margin-top: 10px; cursor: pointer; background: #ff3366; color: white; border: none; border-radius: 8px; font-weight: bold; width: 100%; font-size: 15px; transition: 0.2s; }
+        button:hover { background: #ff5588; }
+        .sound-btn-group { display: flex; gap: 10px; margin: 15px 0; }
+        .sound-btn-group label { flex: 1; padding: 10px; border: 1px solid #555; border-radius: 5px; cursor: pointer; font-size: 13px; background: #333; }
         .sound-btn-group input { display: none; }
         .sound-btn-group input:checked + label { background: #ff3366; border-color: #ff3366; }
+        #leaderboard { margin-top: 20px; font-size: 14px; color: #ccc; }
     </style>
 </head>
 <body>
@@ -23,23 +26,27 @@
     
     <div id="menu">
         <div class="box">
-            <h1 id="menuTitle" style="font-size: 24px;">GRIDSHOT 3D</h1>
-            <input type="text" id="playerName" placeholder="닉네임 (20자 이내)" maxlength="20">
-            <div id="settingsArea" style="text-align: left; margin: 10px 0;">
-                <label>감도: <input type="number" id="sens" value="0.35" step="0.001" style="width: 50px;"></label><br>
-                <label>볼륨: <input type="range" id="volRange" min="0" max="1" step="0.1" value="0.5"></label>
+            <h1 id="menuTitle">GRIDSHOT 3D</h1>
+            <div id="inputArea">
+                <input type="text" id="playerName" placeholder="닉네임 입력 (20자 이내)" maxlength="20">
             </div>
-            <div class="sound-btn-group" id="soundArea">
-                <input type="radio" name="soundType" id="s1" value="default" checked><label for="s1">기본 클릭음</label>
-                <input type="radio" name="soundType" id="s2" value="custom"><label for="s2">띵~ 효과음</label>
+            
+            <div id="settingsArea">
+                <label>감도: <input type="number" id="sens" value="0.35" step="0.001" style="width: 60px;"></label>
+                <div class="sound-btn-group" id="soundArea">
+                    <input type="radio" name="soundType" id="s1" value="default" checked><label for="s1">기본음</label>
+                    <input type="radio" name="soundType" id="s2" value="custom"><label for="s2">띵~음</label>
+                </div>
             </div>
-            <div id="startArea"><button id="startBtn">START</button></div>
-            <div id="resumeArea" style="display:none;"><button id="resumeBtn" style="background:#00ffcc; color:#000;">게임 재개</button></div>
+
+            <div id="startArea"><button id="startBtn">START GAME</button></div>
+            <div id="resumeArea" style="display:none;"><button id="resumeBtn" style="background:#00ffcc; color:#000;">RESUME</button></div>
+            
             <div id="endArea" style="display:none;">
-                <button id="btnRegister">랭킹 등록</button>
-                <button id="btnRestart" style="background:#444;">랭킹 등록 안 하고 재시작</button>
+                <button id="btnRegister">랭킹 등록하기</button>
+                <button id="btnRestart" style="background:#444;">다시 시작하기</button>
             </div>
-            <div id="leaderboard" style="font-size: 12px; margin-top:10px;"></div>
+            <div id="leaderboard"></div>
         </div>
     </div>
 
@@ -52,47 +59,83 @@
         let camera, scene, renderer, controls, targets = [], score = 0, lastRemovedIndex = -1, timeLeft = 60, gameActive = false, isPaused = false, timerInterval = null;
 
         const gridPositions = [{x: -1.8, y: 1.8, z: -5}, {x: 0, y: 1.8, z: -5}, {x: 1.8, y: 1.8, z: -5}, {x: -1.8, y: 0, z: -5}, {x: 0, y: 0, z: -5}, {x: 1.8, y: 0, z: -5}, {x: -1.8, y: -1.8, z: -5}, {x: 0, y: -1.8, z: -5}, {x: 1.8, y: -1.8, z: -5}];
-        
-        // 🌟 평면으로 변경 (원형 이미지를 위해 PlaneGeometry 사용)
         const targetGeometry = new THREE.PlaneGeometry(0.8, 0.8);
         const texture = new THREE.TextureLoader().load('https://i.ibb.co/yn9FDhkc/2-1-removebg-preview.png');
         const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide });
 
         scene = new THREE.Scene(); scene.background = new THREE.Color(0x1a1a1a);
-        const roomMat = new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide });
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), roomMat); floor.rotation.x = -Math.PI/2; floor.position.y = -3; scene.add(floor);
-        const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 10), roomMat); backWall.position.z = -7; scene.add(backWall);
         camera = new THREE.PerspectiveCamera(80, window.innerWidth/window.innerHeight, 0.1, 100);
         renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight); document.body.appendChild(renderer.domElement);
         controls = new THREE.PointerLockControls(camera, document.body);
 
-        // [중략 - 모든 기존 로직 유지]
-        // ... (이벤트 리스너, 게임 컨트롤 로직 등은 기존과 동일)
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && gameActive) { if (controls.isLocked) { controls.unlock(); isPaused = true; clearInterval(timerInterval); } } });
-        controls.addEventListener('unlock', () => { if (gameActive) { document.getElementById('menu').style.display = 'flex'; document.getElementById('crosshair').style.display = 'none'; document.getElementById('startArea').style.display = 'none'; document.getElementById('resumeArea').style.display = 'block'; document.getElementById('settingsArea').style.display = 'block'; document.getElementById('soundArea').style.display = 'flex'; } });
-        controls.addEventListener('lock', () => { document.getElementById('menu').style.display = 'none'; document.getElementById('crosshair').style.display = 'block'; if (isPaused) { isPaused = false; timerInterval = setInterval(() => { timeLeft--; document.getElementById('timer').innerText = timeLeft; if(timeLeft <= 0) endGame(); }, 1000); } });
-        document.getElementById('startBtn').onclick = async () => { defaultSound.play(); defaultSound.pause(); customSound.play(); customSound.pause(); controls.pointerSpeed = parseFloat(document.getElementById('sens').value) * 1.5; await document.body.requestPointerLock(); startGame(); };
-        document.getElementById('resumeBtn').onclick = async () => { await document.body.requestPointerLock(); };
+        function applySens() { controls.pointerSpeed = parseFloat(document.getElementById('sens').value) * 1.5; }
+        
+        document.getElementById('startBtn').onclick = async () => { defaultSound.play(); defaultSound.pause(); customSound.play(); customSound.pause(); applySens(); await document.body.requestPointerLock(); startGame(); };
+        document.getElementById('resumeBtn').onclick = async () => { applySens(); await document.body.requestPointerLock(); };
 
+        controls.addEventListener('lock', () => { document.getElementById('menu').style.display = 'none'; if(isPaused) { isPaused = false; timerInterval = setInterval(timerTick, 1000); } });
+        controls.addEventListener('unlock', () => { if(gameActive) { clearInterval(timerInterval); isPaused = true; document.getElementById('menu').style.display = 'flex'; document.getElementById('startArea').style.display = 'none'; document.getElementById('resumeArea').style.display = 'block'; } });
+
+        function timerTick() { timeLeft--; document.getElementById('timer').innerText = timeLeft; if(timeLeft <= 0) endGame(); }
+        
         window.addEventListener('mousedown', (e) => {
-            if (!controls.isLocked || e.button !== 0 || !gameActive || isPaused) return;
-            e.preventDefault(); camera.updateMatrixWorld(); const ray = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion); const origin = camera.position.clone();
-            let hitIndex = -1; targets.forEach((t, i) => { const toTarget = new THREE.Vector3().subVectors(t.position, origin); const dist = new THREE.Vector3().crossVectors(toTarget, ray).length(); if (dist < 0.4) hitIndex = i; }); // 0.4는 평면 크기 조정 시의 판정 범위
-            if (hitIndex !== -1) {
+            if (!controls.isLocked || !gameActive) return;
+            const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const intersects = ray.intersectObjects(targets);
+            if (intersects.length > 0) {
                 const sound = document.querySelector('input[name="soundType"]:checked').value === 'custom' ? customSound : defaultSound;
-                sound.volume = document.getElementById('volRange').value; sound.currentTime = 0; sound.play().catch(e => {});
-                lastRemovedIndex = targets[hitIndex].userData.gridIndex; scene.remove(targets[hitIndex]); targets.splice(hitIndex, 1); score += 100; document.getElementById('score').innerText = score; spawn();
+                sound.currentTime = 0; sound.volume = document.getElementById('volRange').value; sound.play().catch(()=>{});
+                scene.remove(intersects[0].object); targets.splice(targets.indexOf(intersects[0].object), 1);
+                score += 100; document.getElementById('score').innerText = score; spawn();
             }
-        }, { capture: true });
+        });
 
-        function spawn() { const occupied = targets.map(t => t.userData.gridIndex); let candidates = gridPositions.map((_, i) => i).filter(i => !occupied.includes(i) && i !== lastRemovedIndex); if(candidates.length === 0) candidates = gridPositions.map((_, i) => i).filter(i => !occupied.includes(i)); const idx = candidates[Math.floor(Math.random() * candidates.length)]; const pos = gridPositions[idx]; const t = new THREE.Mesh(targetGeometry, material); t.position.set(pos.x, pos.y, pos.z); t.userData.gridIndex = idx; scene.add(t); targets.push(t); }
-        function animate() { requestAnimationFrame(animate); targets.forEach(t => t.lookAt(camera.position)); renderer.render(scene, camera); } animate();
-        function updateLeaderboard() { let data = JSON.parse(localStorage.getItem('gridshot_rankings') || '[]'); const now = Date.now(); data = data.filter(entry => (now - entry.time) < 3600000); data.sort((a,b) => b.score - a.score); localStorage.setItem('gridshot_rankings', JSON.stringify(data)); const top10 = data.slice(0, 10); document.getElementById('leaderboard').innerHTML = "<h3>TOP 10 RANKING</h3>" + top10.map((e, i) => `${i+1}위: ${e.name} - ${e.score}점`).join('<br>'); } updateLeaderboard();
-        function startGame() { score = 0; timeLeft = 60; gameActive = true; document.getElementById('playerName').style.display = 'none'; document.getElementById('startArea').style.display = 'none'; document.getElementById('resumeArea').style.display = 'none'; document.getElementById('endArea').style.display = 'none'; document.getElementById('score').innerText = score; document.getElementById('timer').innerText = timeLeft; targets.forEach(t => scene.remove(t)); targets = []; for(let i=0; i<3; i++) spawn(); clearInterval(timerInterval); timerInterval = setInterval(() => { timeLeft--; document.getElementById('timer').innerText = timeLeft; if(timeLeft <= 0) endGame(); }, 1000); }
-        function endGame() { gameActive = false; clearInterval(timerInterval); document.exitPointerLock(); document.getElementById('menuTitle').innerText = "SCORE: " + score; document.getElementById('playerName').style.display = 'block'; document.getElementById('endArea').style.display = 'block'; document.getElementById('settingsArea').style.display = 'none'; document.getElementById('soundArea').style.display = 'none'; updateLeaderboard(); }
-        document.getElementById('btnRegister').onclick = () => { const name = document.getElementById('playerName').value || "익명"; let data = JSON.parse(localStorage.getItem('gridshot_rankings') || '[]'); data.push({ name: name, score: score, time: Date.now() }); localStorage.setItem('gridshot_rankings', JSON.stringify(data)); updateLeaderboard(); resetMenu(); };
-        document.getElementById('btnRestart').onclick = () => { resetMenu(); };
-        function resetMenu() { document.getElementById('menuTitle').innerText = "GRIDSHOT 3D"; document.getElementById('playerName').style.display = 'block'; document.getElementById('startArea').style.display = 'block'; document.getElementById('endArea').style.display = 'none'; document.getElementById('settingsArea').style.display = 'block'; document.getElementById('soundArea').style.display = 'flex'; }
+        function spawn() {
+            const t = new THREE.Mesh(targetGeometry, material);
+            const pos = gridPositions[Math.floor(Math.random() * gridPositions.length)];
+            t.position.set(pos.x, pos.y, pos.z); scene.add(t); targets.push(t);
+        }
+
+        function startGame() { score = 0; timeLeft = 60; gameActive = true; document.getElementById('score').innerText = score; document.getElementById('timer').innerText = timeLeft; targets.forEach(t => scene.remove(t)); targets = []; for(let i=0; i<3; i++) spawn(); timerInterval = setInterval(timerTick, 1000); }
+        
+        function endGame() { 
+            gameActive = false; clearInterval(timerInterval); document.exitPointerLock(); 
+            document.getElementById('menuTitle').innerText = "GAME OVER: " + score + "점";
+            document.getElementById('menu').style.display = 'flex'; 
+            document.getElementById('startArea').style.display = 'none';
+            document.getElementById('resumeArea').style.display = 'none';
+            document.getElementById('endArea').style.display = 'block';
+            document.getElementById('settingsArea').style.display = 'none';
+            document.getElementById('soundArea').style.display = 'none';
+            document.getElementById('inputArea').style.display = 'block';
+        }
+
+        document.getElementById('btnRegister').onclick = () => { 
+            let data = JSON.parse(localStorage.getItem('gridshot_rankings') || '[]'); 
+            data.push({ name: document.getElementById('playerName').value || "익명", score: score, time: Date.now() }); 
+            localStorage.setItem('gridshot_rankings', JSON.stringify(data)); updateLeaderboard(); resetMenu(); 
+        };
+        
+        document.getElementById('btnRestart').onclick = resetMenu;
+
+        function resetMenu() { 
+            document.getElementById('menuTitle').innerText = "GRIDSHOT 3D";
+            document.getElementById('endArea').style.display = 'none';
+            document.getElementById('startArea').style.display = 'block';
+            document.getElementById('settingsArea').style.display = 'block';
+            document.getElementById('soundArea').style.display = 'flex';
+            document.getElementById('inputArea').style.display = 'block';
+            updateLeaderboard();
+        }
+
+        function updateLeaderboard() { 
+            let data = JSON.parse(localStorage.getItem('gridshot_rankings') || '[]');
+            data.sort((a,b) => b.score - a.score);
+            document.getElementById('leaderboard').innerHTML = "<h4>TOP 5 RANKING</h4>" + data.slice(0,5).map((e, i) => `${i+1}위: ${e.name} (${e.score}점)`).join('<br>'); 
+        }
+        
+        function animate() { requestAnimationFrame(animate); renderer.render(scene, camera); } 
+        animate();
     </script>
 </body>
 </html>
