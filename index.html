@@ -1,13 +1,9 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yunene GRIDSHOT</title>
-
-    <meta property="og:title" content="Yunene GRIDSHOT">
-    <meta property="og:description" content="GRIDSHOT TRAINER GAME SETTINGS Valorant Sensitivity (발로란트 감도) HIT SOUND SETTING">
-    <meta property="og:image" content="./cheondohwa.png"> <meta property="og:url" content="https://yunenegridshot.kro.kr/">	
-    
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body, html {
@@ -186,7 +182,6 @@
         <div class="menu-card">
             <h1 id="menu-title">GRIDSHOT TRAINER</h1>
             
-            <!-- 결과 및 랭킹 등록 영역 -->
             <div class="result-container" id="result-board">
                 <div class="result-row"><span>Score</span><span class="result-val" id="res-score">0</span></div>
                 <div class="result-row"><span>Hits</span><span class="result-val" id="res-hits">0</span></div>
@@ -199,7 +194,6 @@
                 </div>
             </div>
 
-            <!-- 발로란트 감도 설정 -->
             <div class="setting-section">
                 <div class="section-title">GAME SETTINGS</div>
                 <div class="input-group">
@@ -208,7 +202,6 @@
                 </div>
             </div>
 
-            <!-- 사운드 설정 -->
             <div class="setting-section">
                 <div class="section-title">HIT SOUND SETTINGS</div>
                 <div class="radio-group">
@@ -230,14 +223,12 @@
                 </div>
             </div>
 
-            <!-- 랭킹 보드 (TOP 10) -->
             <div class="setting-section" id="leaderboard-section">
                 <div class="section-title">
                     TOP 10 LEADERBOARD
                     <span class="refresh-indicator">● 실시간 갱신 중</span>
                 </div>
                 <div class="leaderboard-list" id="leaderboard-list">
-                    <!-- 랭킹 아이템이 JS를 통해 동적으로 들어옵니다. -->
                     <div class="empty-rank">등록된 랭킹이 없습니다.</div>
                 </div>
             </div>
@@ -249,7 +240,6 @@
 
     <div id="canvas-container"></div>
 
-    <!-- Three.js Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // --- 게임 상태 및 상수 ---
@@ -257,9 +247,8 @@
         let isPlaying = false, gameTimer = null;
         let finalAcc = 100;
         
-        // 발로란트 회전값 & 고정 웹 배율(1.5)
+        // 발로란트 회전값 (언리얼 엔진 마우스 Yaw: 0.07도)
         const VALORANT_YAW_RADIAN = 0.07 * (Math.PI / 180);
-        const FIXED_WEB_MULTIPLIER = 1.5;
 
         // --- 오디오 관리 (오디오 풀링 시스템) ---
         const audioUrls = {
@@ -498,15 +487,16 @@
             if (document.pointerLockElement !== container) return;
             const sensitivity = parseFloat(document.getElementById('sensitivity').value) || 0.3;
             
-            const finalRotX = e.movementX * VALORANT_YAW_RADIAN * sensitivity * FIXED_WEB_MULTIPLIER;
-            const finalRotY = e.movementY * VALORANT_YAW_RADIAN * sensitivity * FIXED_WEB_MULTIPLIER;
+            // 추가되었던 1.5 웹 보정 배율 제거 (순수 발로란트 공식)
+            const finalRotX = e.movementX * VALORANT_YAW_RADIAN * sensitivity;
+            const finalRotY = e.movementY * VALORANT_YAW_RADIAN * sensitivity;
             
             camera.rotation.y -= finalRotX;
             camera.rotation.x -= finalRotY;
             camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
         });
 
-        // === 핵심 버그 수정: 일시정지 후 재개 로직 (resumeGame 추가) ===
+        // === 일시정지 후 재개 로직 ===
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === container) {
                 menuOverlay.style.opacity = '0';
