@@ -117,17 +117,29 @@
         .btn-secondary:hover { background: #388bfd; }
         .btn:disabled { background: #484f58; cursor: not-allowed; transform: none; }
 
-        /* Audio Selector & Slider */
+        /* UI Selectors (Radio Tabs) */
         .radio-group { display: flex; gap: 10px; margin-bottom: 15px; }
         .radio-label {
             flex: 1; display: block; text-align: center; background: #0d1117;
-            border: 1px solid #30363d; padding: 12px; border-radius: 6px;
-            cursor: pointer; font-size: 14px; font-weight: 600; color: #8b949e;
+            border: 1px solid #30363d; padding: 10px; border-radius: 6px;
+            cursor: pointer; font-size: 13px; font-weight: 600; color: #8b949e;
+            transition: all 0.2s;
         }
         input[type="radio"] { display: none; }
         input[type="radio"]:checked + .radio-label {
             background: #1f6feb; border-color: #58a6ff; color: #ffffff;
+            box-shadow: 0 0 10px rgba(88, 166, 255, 0.2);
         }
+
+        /* Leaderboard Tabs */
+        .lb-tabs { display: flex; gap: 5px; margin-bottom: 15px; }
+        .lb-tab {
+            flex: 1; padding: 8px; background: #0d1117; border: 1px solid #30363d;
+            border-radius: 6px; color: #8b949e; font-size: 12px; font-weight: 700;
+            cursor: pointer; transition: 0.2s;
+        }
+        .lb-tab.active { background: #58a6ff; color: #0d1117; border-color: #58a6ff; }
+        
         .slider-container { display: flex; align-items: center; gap: 15px; }
         input[type="range"] { flex: 1; -webkit-appearance: none; background: #0d1117; height: 6px; border-radius: 3px; outline: none; }
         input[type="range"]::-webkit-slider-thumb {
@@ -136,10 +148,8 @@
         }
         .vol-value { font-size: 13px; font-weight: 700; color: #8b949e; min-width: 35px; text-align: right; }
         
-        /* Leaderboard */
-        .leaderboard-list {
-            max-height: 250px; overflow-y: auto; padding-right: 5px;
-        }
+        /* Leaderboard List */
+        .leaderboard-list { max-height: 250px; overflow-y: auto; padding-right: 5px; }
         .leaderboard-list::-webkit-scrollbar { width: 6px; }
         .leaderboard-list::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
         .rank-item {
@@ -159,12 +169,7 @@
         .empty-rank { text-align: center; color: #6e7681; font-size: 13px; padding: 20px 0; }
         .refresh-indicator { font-size: 10px; color: #2ea043; font-weight: normal; animation: pulse 1.5s infinite; }
         
-        @keyframes pulse {
-            0% { opacity: 0.5; }
-            50% { opacity: 1; }
-            100% { opacity: 0.5; }
-        }
-
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
         #instructions { margin-top: 15px; font-size: 12px; color: #8b949e; line-height: 1.6; text-align: center; }
     </style>
 </head>
@@ -190,12 +195,26 @@
                 <div class="register-group" id="register-group">
                     <label for="nickname">기록을 랭킹에 남기세요!</label>
                     <input type="text" id="nickname" placeholder="닉네임 입력 (최대 10자)" maxlength="10">
-                    <button class="btn btn-secondary" id="register-btn">랭킹에 등록</button>
+                    <button class="btn btn-secondary" id="register-btn">서버에 랭킹 등록</button>
                 </div>
             </div>
 
             <div class="setting-section">
                 <div class="section-title">GAME SETTINGS</div>
+                <div class="radio-group">
+                    <div>
+                        <input type="radio" id="diff-easy" name="difficulty" value="easy">
+                        <label for="diff-easy" class="radio-label">쉬움</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="diff-normal" name="difficulty" value="normal">
+                        <label for="diff-normal" class="radio-label">보통</label>
+                    </div>
+                    <div>
+                        <input type="radio" id="diff-hard" name="difficulty" value="hard" checked>
+                        <label for="diff-hard" class="radio-label">어려움</label>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="sensitivity">Valorant Sensitivity (발로란트 감도)</label>
                     <input type="number" id="sensitivity" value="0.3" step="0.01" min="0.01" max="10">
@@ -225,11 +244,16 @@
 
             <div class="setting-section" id="leaderboard-section">
                 <div class="section-title">
-                    TOP 10 LEADERBOARD
-                    <span class="refresh-indicator">● 실시간 갱신 중</span>
+                    GLOBAL LEADERBOARD
+                    <span class="refresh-indicator" id="sync-status">● 서버 동기화 중</span>
+                </div>
+                <div class="lb-tabs">
+                    <button class="lb-tab" data-target-diff="easy">쉬움</button>
+                    <button class="lb-tab" data-target-diff="normal">보통</button>
+                    <button class="lb-tab active" data-target-diff="hard">어려움</button>
                 </div>
                 <div class="leaderboard-list" id="leaderboard-list">
-                    <div class="empty-rank">등록된 랭킹이 없습니다.</div>
+                    <div class="empty-rank">데이터를 불러오는 중...</div>
                 </div>
             </div>
 
@@ -241,16 +265,38 @@
     <div id="canvas-container"></div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // --- 게임 상태 및 상수 ---
+    
+    <script type="module">
+        // 1. Firebase SDK Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 2. 캡처 화면에 있던 Firebase 설정값 적용
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZQkBXTuPRYH-WKQLjxPh7tFqoaA3DT2U",
+            authDomain: "gridshot-trainer.firebaseapp.com",
+            projectId: "gridshot-trainer",
+            storageBucket: "gridshot-trainer.firebasestorage.app",
+            messagingSenderId: "857178952384",
+            appId: "1:857178952384:web:10d86fd47376c8fe7cd325",
+            measurementId: "G-BJCYRM1EJE"
+        };
+
+        // 3. Firebase 및 데이터베이스 초기화
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // --- 기존 게임 상태 및 변수 ---
         let score = 0, hits = 0, totalClicks = 0, timeLeft = 60.0;
         let isPlaying = false, gameTimer = null;
         let finalAcc = 100;
+        let activeDifficulty = 'hard'; 
+        let viewDifficulty = 'hard';   
         
-        // 발로란트 회전값 (언리얼 엔진 마우스 Yaw: 0.07도)
+        const TARGET_SIZES = { easy: 2.6, normal: 2.1, hard: 1.7 };
         const VALORANT_YAW_RADIAN = 0.07 * (Math.PI / 180);
 
-        // --- 오디오 관리 (오디오 풀링 시스템) ---
+        // --- 오디오 관리 ---
         const audioUrls = {
             default: "https://github.com/kmjgit/For-Yunene/raw/refs/heads/main/%EA%B8%B0%EB%B3%B8%20%ED%91%9C%EC%A0%81%20%ED%9A%A8%EA%B3%BC.mp3",
             ding: "https://github.com/kmjgit/For-Yunene/raw/refs/heads/main/%EC%9C%A0%EB%84%A4%EB%84%A4%20%EB%9D%B5.MP3"
@@ -275,16 +321,15 @@
             
             audio.volume = volume;
             audio.currentTime = 0; 
-            audio.play().catch(e => console.log("Audio play prevented by browser:", e));
+            audio.play().catch(e => console.log("Audio block:", e));
             poolIndexes[selectedSound] = (index + 1) % POOL_SIZE;
         }
 
-        // 볼륨 슬라이더 텍스트 갱신
         const volSlider = document.getElementById('volume-slider');
         const volTxt = document.getElementById('vol-txt');
         volSlider.addEventListener('input', (e) => volTxt.innerText = e.target.value + '%');
 
-        // --- UI 요소 매핑 ---
+        // --- UI 매핑 ---
         const menuOverlay = document.getElementById('menu-overlay');
         const startBtn = document.getElementById('start-btn');
         const scoreValue = document.getElementById('score-value');
@@ -302,28 +347,53 @@
         const nicknameInput = document.getElementById('nickname');
         const leaderboardList = document.getElementById('leaderboard-list');
 
-        // --- 랭킹 시스템 (LocalStorage 기반) ---
-        function getRankings() {
-            const stored = localStorage.getItem('gridshot_rankings');
-            return stored ? JSON.parse(stored) : [];
-        }
-
-        function saveRanking(nickname, finalScore, finalHits, finalAcc) {
-            const ranks = getRankings();
-            ranks.push({
-                nickname: nickname || "Anonymous",
-                score: finalScore,
-                hits: finalHits,
-                acc: finalAcc,
-                timestamp: Date.now()
+        document.querySelectorAll('.lb-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+                viewDifficulty = e.target.getAttribute('data-target-diff');
+                fetchAndRenderLeaderboard(); 
             });
-            // 점수 내림차순 정렬, 점수가 같으면 명중 횟수로 정렬
-            ranks.sort((a, b) => b.score - a.score || b.hits - a.hits);
-            localStorage.setItem('gridshot_rankings', JSON.stringify(ranks));
-            renderLeaderboard();
+        });
+
+        // --- 글로벌 서버 연동 함수 (Firestore 쿼리 적용) ---
+        async function fetchGlobalRankings(difficulty) {
+            try {
+                const q = query(
+                    collection(db, "rankings_" + difficulty), 
+                    orderBy("score", "desc"), 
+                    orderBy("hits", "desc"), 
+                    limit(10)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                const ranks = [];
+                querySnapshot.forEach((doc) => {
+                    ranks.push(doc.data());
+                });
+                return ranks;
+            } catch (e) {
+                console.error("랭킹 불러오기 실패: ", e);
+                return [];
+            }
         }
 
-        // 경과 시간 계산 함수
+        async function saveGlobalRanking(nickname, finalScore, finalHits, finalAcc, difficulty) {
+            try {
+                await addDoc(collection(db, "rankings_" + difficulty), {
+                    nickname: nickname || "Anonymous",
+                    score: finalScore,
+                    hits: finalHits,
+                    acc: finalAcc,
+                    timestamp: Date.now()
+                });
+                return true;
+            } catch (e) {
+                console.error("랭킹 등록 실패: ", e);
+                return false;
+            }
+        }
+
         function timeSince(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             if (seconds < 60) return "방금 전";
@@ -339,55 +409,66 @@
             if (interval > 1) return Math.floor(interval) + "분 전";
         }
 
-        // 랭킹 보드 렌더링
-        function renderLeaderboard() {
-            const ranks = getRankings();
+        async function fetchAndRenderLeaderboard() {
+            const syncStatus = document.getElementById('sync-status');
+            syncStatus.style.color = '#f1c40f'; 
+            
+            const ranks = await fetchGlobalRankings(viewDifficulty);
+            
             leaderboardList.innerHTML = '';
             
             if (ranks.length === 0) {
                 leaderboardList.innerHTML = '<div class="empty-rank">등록된 랭킹이 없습니다.</div>';
-                return;
+            } else {
+                const top10 = ranks.slice(0, 10);
+                top10.forEach((r, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'rank-item';
+                    item.innerHTML = `
+                        <div class="r-left">
+                            <div class="r-pos">${index + 1}</div>
+                            <div class="r-name">${r.nickname}</div>
+                        </div>
+                        <div class="r-right">
+                            <div class="r-score">${r.score} <span style="font-size:11px; color:#8b949e;">(${r.acc}%)</span></div>
+                            <div class="r-time">${timeSince(r.timestamp)}</div>
+                        </div>
+                    `;
+                    leaderboardList.appendChild(item);
+                });
             }
-            
-            const top10 = ranks.slice(0, 10);
-            
-            top10.forEach((r, index) => {
-                const item = document.createElement('div');
-                item.className = 'rank-item';
-                item.innerHTML = `
-                    <div class="r-left">
-                        <div class="r-pos">${index + 1}</div>
-                        <div class="r-name">${r.nickname}</div>
-                    </div>
-                    <div class="r-right">
-                        <div class="r-score">${r.score} <span style="font-size:11px; color:#8b949e;">(${r.acc}%)</span></div>
-                        <div class="r-time">${timeSince(r.timestamp)}</div>
-                    </div>
-                `;
-                leaderboardList.appendChild(item);
-            });
+            syncStatus.style.color = '#2ea043'; 
         }
 
-        // 3초마다 랭킹 시간 정보 실시간 갱신
         setInterval(() => {
             if (!isPlaying && menuOverlay.style.display !== 'none') {
-                renderLeaderboard();
+                fetchAndRenderLeaderboard();
             }
         }, 3000);
 
-        renderLeaderboard(); // 최초 로딩 시 렌더링
+        fetchAndRenderLeaderboard(); 
 
-        // 랭킹 등록 버튼 이벤트
-        registerBtn.addEventListener('click', () => {
+        registerBtn.addEventListener('click', async () => {
             const nick = nicknameInput.value.trim();
             if(!nick) {
                 alert("닉네임을 입력해주세요!");
                 return;
             }
-            saveRanking(nick, score, hits, finalAcc);
-            registerGroup.style.display = 'none'; // 등록 후 입력창 숨김
+            
+            registerBtn.innerText = "서버 전송 중...";
             registerBtn.disabled = true;
+            
+            await saveGlobalRanking(nick, score, hits, finalAcc, activeDifficulty);
+            
+            document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.lb-tab[data-target-diff="${activeDifficulty}"]`).classList.add('active');
+            viewDifficulty = activeDifficulty;
+            
+            await fetchAndRenderLeaderboard();
+            
+            registerGroup.style.display = 'none'; 
             nicknameInput.value = '';
+            registerBtn.innerText = "서버에 랭킹 등록";
         });
 
         // --- Three.js 초기화 ---
@@ -418,7 +499,6 @@
         pointLight.position.set(0, 10, -5);
         scene.add(pointLight);
 
-        // 격자무늬 방 생성
         function createGridTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 512;
@@ -438,13 +518,14 @@
         room.position.set(0, 10, 0); 
         scene.add(room);
 
-        // --- 3x3 그리드 & 이미지 타겟 생성 ---
+        // --- 타겟 생성 설정 ---
         const textureLoader = new THREE.TextureLoader();
         const targetMaterial = new THREE.MeshBasicMaterial({
             map: textureLoader.load("https://i.ibb.co/yn9FDhkc/2-1-removebg-preview.png"),
             transparent: true, side: THREE.DoubleSide
         });
-        const targetGeometry = new THREE.PlaneGeometry(1.7, 1.7);
+        
+        let targetGeometry; 
         const targets = [];
         const wallZ = -19.5; 
         
@@ -487,7 +568,6 @@
             if (document.pointerLockElement !== container) return;
             const sensitivity = parseFloat(document.getElementById('sensitivity').value) || 0.3;
             
-            // 추가되었던 1.5 웹 보정 배율 제거 (순수 발로란트 공식)
             const finalRotX = e.movementX * VALORANT_YAW_RADIAN * sensitivity;
             const finalRotY = e.movementY * VALORANT_YAW_RADIAN * sensitivity;
             
@@ -496,7 +576,6 @@
             camera.rotation.x = Math.max(-Math.PI / 2.1, Math.min(Math.PI / 2.1, camera.rotation.x));
         });
 
-        // === 일시정지 후 재개 로직 ===
         document.addEventListener('pointerlockchange', () => {
             if (document.pointerLockElement === container) {
                 menuOverlay.style.opacity = '0';
@@ -505,7 +584,7 @@
                 if(!isPlaying) {
                     startNewGame();
                 } else {
-                    resumeGame(); // 일시정지 상태에서 돌아올 때 타이머만 재개
+                    resumeGame(); 
                 }
             } else {
                 menuOverlay.style.display = 'flex';
@@ -556,6 +635,10 @@
             isPlaying = true;
             score = 0; hits = 0; totalClicks = 0; timeLeft = 60.0; finalAcc = 100;
             
+            activeDifficulty = document.querySelector('input[name="difficulty"]:checked').value;
+            const targetSize = TARGET_SIZES[activeDifficulty];
+            targetGeometry = new THREE.PlaneGeometry(targetSize, targetSize);
+            
             camera.rotation.set(0, 0, 0); 
             targets.forEach(t => scene.remove(t));
             targets.length = 0; activeGridPositions = []; lastDestroyedPosition = -1;
@@ -578,7 +661,6 @@
             registerGroup.style.display = 'none'; 
         }
 
-        // 타이머 재개용 함수
         function resumeGame() {
             if(gameTimer) clearInterval(gameTimer);
             gameTimer = setInterval(() => {
@@ -607,7 +689,10 @@
             targets.forEach(t => scene.remove(t));
             targets.length = 0; activeGridPositions = [];
             
-            renderLeaderboard();
+            document.querySelectorAll('.lb-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.lb-tab[data-target-diff="${activeDifficulty}"]`).classList.add('active');
+            viewDifficulty = activeDifficulty;
+            fetchAndRenderLeaderboard();
         }
 
         startBtn.addEventListener('click', () => { container.requestPointerLock(); });
